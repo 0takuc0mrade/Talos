@@ -3,3 +3,6 @@ target
 snfoundry_trace/
 coverage/
 profile/
+offchain/node_modules/
+offchain/dist/
+offchain/.env

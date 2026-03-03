@@ -5,11 +5,11 @@ pub trait ITalosCore<TContractState> {
     fn execute_agent_workflow(
         ref self: TContractState,
         payer_address: ContractAddress,
-        payer_pub_key: felt252,
         payee_address: ContractAddress,
         token_address: ContractAddress,
         amount: u256,
         task_id: felt252,
+        deadline: u64,
         signature: Array<felt252>,
         target_agent_id: u256,
         score: u8,
@@ -51,6 +51,7 @@ pub mod TalosCore {
         payee: ContractAddress,
         token: ContractAddress,
         amount: u256,
+        deadline: u64,
         score: u8,
     }
 
@@ -71,11 +72,11 @@ pub mod TalosCore {
         fn execute_agent_workflow(
             ref self: ContractState,
             payer_address: ContractAddress,
-            payer_pub_key: felt252,
             payee_address: ContractAddress,
             token_address: ContractAddress,
             amount: u256,
             task_id: felt252,
+            deadline: u64,
             signature: Array<felt252>,
             target_agent_id: u256,
             score: u8,
@@ -94,11 +95,11 @@ pub mod TalosCore {
             settlement
                 .settle_payment(
                     payer_address,
-                    payer_pub_key,
                     payee_address,
                     token_address,
                     amount,
                     task_id,
+                    deadline,
                     signature,
                 );
             reputation.submit_feedback(target_agent_id, task_id, score);
@@ -112,6 +113,7 @@ pub mod TalosCore {
                         payee: payee_address,
                         token: token_address,
                         amount,
+                        deadline,
                         score,
                     },
                 ),

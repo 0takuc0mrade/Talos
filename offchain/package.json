@@ -1,0 +1,23 @@
+{
+  "name": "talos-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm run patch:starkzap",
+    "patch:starkzap": "node scripts/patch-starkzap.mjs",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "smoke": "npm run build && node dist/scripts/smoke.js",
+    "verify": "npm run build && node dist/scripts/verify.js"
+  },
+  "dependencies": {
+    "starknet": "^8.9.2",
+    "starkzap": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.3"
+  }
+}
