@@ -1,0 +1,53 @@
+{
+  "version": "talos-abi-freeze-v1",
+  "entries": [
+    {
+      "file": "src/identity.cairo",
+      "trait": "ITalosIdentity",
+      "signatures": [
+        "fn register_agent( ref self: TContractState, pub_key: felt252, metadata_uri: ByteArray) -> u256;",
+        "fn update_metadata(ref self: TContractState, agent_id: u256, metadata_uri: ByteArray);",
+        "fn get_agent(self: @TContractState, agent_id: u256) -> Agent;",
+        "fn get_agent_count(self: @TContractState) -> u256;"
+      ]
+    },
+    {
+      "file": "src/settlement.cairo",
+      "trait": "ITalosSettlement",
+      "signatures": [
+        "fn set_core_protocol(ref self: TContractState, core_protocol: ContractAddress);",
+        "fn transfer_admin(ref self: TContractState, new_admin: ContractAddress);",
+        "fn add_supported_token(ref self: TContractState, token: ContractAddress);",
+        "fn remove_supported_token(ref self: TContractState, token: ContractAddress);",
+        "fn settle_payment( ref self: TContractState, payer_address: ContractAddress, payee_address: ContractAddress, token_address: ContractAddress, amount: u256, task_id: felt252, deadline: u64, signature: Array<felt252>);",
+        "fn get_admin(self: @TContractState) -> ContractAddress;",
+        "fn get_core_protocol(self: @TContractState) -> ContractAddress;",
+        "fn is_supported_token(self: @TContractState, token: ContractAddress) -> bool;",
+        "fn is_task_settled(self: @TContractState, task_id: felt252) -> bool;"
+      ]
+    },
+    {
+      "file": "src/reputation.cairo",
+      "trait": "ITalosReputation",
+      "signatures": [
+        "fn set_core_protocol(ref self: TContractState, core_protocol: ContractAddress);",
+        "fn transfer_admin(ref self: TContractState, new_admin: ContractAddress);",
+        "fn submit_feedback( ref self: TContractState, target_agent_id: u256, task_id: felt252, score: u8);",
+        "fn get_admin(self: @TContractState) -> ContractAddress;",
+        "fn get_core_protocol(self: @TContractState) -> ContractAddress;",
+        "fn get_average_score(self: @TContractState, agent_id: u256) -> u8;",
+        "fn get_reputation_data(self: @TContractState, agent_id: u256) -> ReputationData;"
+      ]
+    },
+    {
+      "file": "src/core.cairo",
+      "trait": "ITalosCore",
+      "signatures": [
+        "fn execute_agent_workflow( ref self: TContractState, payer_address: ContractAddress, payee_address: ContractAddress, token_address: ContractAddress, amount: u256, task_id: felt252, deadline: u64, signature: Array<felt252>, target_agent_id: u256, score: u8);",
+        "fn get_identity_contract(self: @TContractState) -> ContractAddress;",
+        "fn get_settlement_contract(self: @TContractState) -> ContractAddress;",
+        "fn get_reputation_contract(self: @TContractState) -> ContractAddress;"
+      ]
+    }
+  ]
+}

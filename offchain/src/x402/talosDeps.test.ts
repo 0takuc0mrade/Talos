@@ -2,6 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createTalosX402InterceptorDeps } from "./talosDeps.js";
 
+const TASK_COMMITMENT =
+  "0x12ab34cd56ef7890ab12cd34ef56ab7890cd12ef34ab56cd78ef90ab12cd34";
+
 test("createTalosX402InterceptorDeps selects token from policy before signing", async () => {
   const deps = createTalosX402InterceptorDeps({
     verifyingContract: "0x457",
@@ -26,7 +29,7 @@ test("createTalosX402InterceptorDeps selects token from policy before signing", 
         token_address: "0xaaa",
         supported_tokens: ["0xaaa", "0xbbb"],
         amount: "50",
-        task_commitment: "0xabc",
+        task_commitment: TASK_COMMITMENT,
         deadline: 1735689600,
         target_agent_id: "9",
         score: 90,

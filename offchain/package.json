@@ -7,7 +7,8 @@
     "postinstall": "npm run patch:starkzap",
     "patch:starkzap": "node scripts/patch-starkzap.mjs",
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit",
+    "check": "tsc -p tsconfig.json --noEmit && npm run check:abi-freeze",
+    "check:abi-freeze": "npm run build && node dist/scripts/checkAbiFreeze.js",
     "test": "npm run build && node --test dist/**/*.test.js",
     "smoke": "npm run build && node dist/scripts/smoke.js",
     "verify": "npm run build && node dist/scripts/verify.js"

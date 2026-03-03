@@ -1,3 +1,5 @@
+import { assertTaskCommitment } from "../privacy/taskCommitmentPolicy.js";
+
 export interface ParsedX402Challenge {
   payerAddress: string;
   payeeAddress: string;
@@ -63,7 +65,10 @@ function parseRawChallenge(raw: RawChallenge): ParsedX402Challenge {
   const payerAddress = asString(raw.payer_address ?? raw.payer, "payer_address");
   const payeeAddress = asString(raw.payee_address ?? raw.payee, "payee_address");
   const tokenAddress = asString(raw.token_address ?? raw.token, "token_address");
-  const taskCommitment = asString(raw.task_commitment ?? raw.task_id, "task_commitment");
+  const taskCommitment = assertTaskCommitment(
+    asString(raw.task_commitment ?? raw.task_id, "task_commitment"),
+    { fieldName: "task_commitment" },
+  );
   const deadline = asNumber(raw.deadline, "deadline");
   const score = asNumber(raw.score ?? 0, "score");
   const targetAgentId = asBigInt(raw.target_agent_id ?? 0, "target_agent_id");

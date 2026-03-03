@@ -1,4 +1,7 @@
 export interface TalosReadinessInput {
+  abiFreezeEnforced: boolean;
+  privacyPolicyEnforced: boolean;
+  gasSponsorshipReady: boolean;
   contractsTested: boolean;
   sdkTestsPassing: boolean;
   deploymentConfigured: boolean;
@@ -18,6 +21,9 @@ export interface TalosReadinessReport {
 export function evaluateTalosReadiness(input: TalosReadinessInput): TalosReadinessReport {
   const missing: string[] = [];
 
+  if (!input.abiFreezeEnforced) missing.push("abiFreezeEnforced");
+  if (!input.privacyPolicyEnforced) missing.push("privacyPolicyEnforced");
+  if (!input.gasSponsorshipReady) missing.push("gasSponsorshipReady");
   if (!input.contractsTested) missing.push("contractsTested");
   if (!input.sdkTestsPassing) missing.push("sdkTestsPassing");
   if (!input.deploymentConfigured) missing.push("deploymentConfigured");

@@ -2,6 +2,13 @@
 
 This checklist maps directly to remaining delivery steps (deployment wiring, observability, guardrails, staged rollout).
 
+## 0) Interface Freeze + Signing Surface Lock
+
+- Keep `docs/talos-abi-freeze.json` as the canonical ABI manifest.
+- Run freeze checker:
+  - `npm --prefix ./offchain run check:abi-freeze`
+- Include freeze checker in CI before deploy/finalize.
+
 ## 1) Deployment Wiring
 
 - Fill all required vars in `offchain/.env`:
@@ -15,9 +22,13 @@ This checklist maps directly to remaining delivery steps (deployment wiring, obs
 
 - Enable runtime policy checks:
   - `TalosExecutionGuardrails` in `offchain/src/guardrails/policy.ts`
+- Enforce commitment privacy policy:
+  - `assertTaskCommitment(...)` in `offchain/src/privacy/taskCommitmentPolicy.ts`
+  - Reject non-hex or low-entropy task commitments before signing/submission.
 - Recommended baseline:
   - `minDeadlineLeadSeconds = 30`
   - `maxDeadlineHorizonSeconds = 900`
+  - `taskCommitmentMinBits >= 120`
   - per-token max amount caps
   - payer + global rate limits
 - Incident mode:
@@ -33,6 +44,16 @@ This checklist maps directly to remaining delivery steps (deployment wiring, obs
   - raw signatures
   - private keys
   - plaintext task/business payloads
+  - low-entropy/raw `task_id` values (only commitment hashes)
+
+## 3.1) Gas Sponsorship Readiness
+
+- Evaluate with:
+  - `evaluateGasSponsorshipReadiness(...)` in `offchain/src/launch/sponsorship.ts`
+- MVP target:
+  - `feeMode = sponsored`
+  - `walletMode = cartridge` (built-in sponsorship), or
+  - `walletMode = signer` with explicit paymaster service configured.
 
 ## 4) Event Indexing
 
@@ -51,6 +72,7 @@ This checklist maps directly to remaining delivery steps (deployment wiring, obs
 - Run full CI:
   - `snforge test`
   - `npm --prefix ./offchain run check`
+  - `npm --prefix ./offchain run check:abi-freeze`
   - `npm --prefix ./offchain test`
 - Execute live flow:
   - register agent
@@ -66,4 +88,3 @@ This checklist maps directly to remaining delivery steps (deployment wiring, obs
   - workflow success/failure ratio
   - failure reason breakdown
   - token utilization mix
-

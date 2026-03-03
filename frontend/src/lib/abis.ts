@@ -1,5 +1,14 @@
 export const IDENTITY_ABI = [
   {
+    type: "struct",
+    name: "core::byte_array::ByteArray",
+    members: [
+      { name: "data", type: "core::array::Array::<core::bytes_31::bytes31>" },
+      { name: "pending_word", type: "core::felt252" },
+      { name: "pending_word_len", type: "core::integer::u32" }
+    ]
+  },
+  {
     type: "function",
     name: "register_agent",
     inputs: [

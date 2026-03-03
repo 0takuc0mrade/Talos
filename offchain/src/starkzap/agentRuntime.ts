@@ -16,6 +16,7 @@ import {
 } from "../guardrails/policy.js";
 import { TalosMetrics } from "../observability/metrics.js";
 import { createTalosLogger, type TalosLogger } from "../observability/logger.js";
+import { evaluateGasSponsorshipReadiness } from "../launch/sponsorship.js";
 
 type FeeMode = "sponsored" | "user_pays";
 
@@ -29,6 +30,10 @@ export interface TalosAgentRuntimeConfig extends StarkzapHeadlessConfig {
   guardrails?: TalosGuardrailsConfig;
   metrics?: TalosMetrics;
   logger?: TalosLogger;
+  sponsorship?: {
+    requireReady?: boolean;
+    paymasterServiceConfigured?: boolean;
+  };
 }
 
 export interface TalosAgentRuntime {
@@ -46,6 +51,17 @@ export interface TalosAgentRuntime {
 export async function createTalosAgentRuntime(
   config: TalosAgentRuntimeConfig,
 ): Promise<TalosAgentRuntime> {
+  const feeMode = config.feeMode ?? "user_pays";
+  const walletMode = config.walletMode ?? "cartridge";
+  const sponsorship = evaluateGasSponsorshipReadiness({
+    walletMode,
+    feeMode,
+    paymasterServiceConfigured: config.sponsorship?.paymasterServiceConfigured,
+  });
+  if (config.sponsorship?.requireReady && !sponsorship.ready) {
+    throw new Error(`gas sponsorship readiness failed: ${sponsorship.reasons.join("; ")}`);
+  }
+
   const headless = await initStarkzapHeadlessWallet(config);
   const guardrails = new TalosExecutionGuardrails(config.guardrails);
   const metrics = config.metrics ?? new TalosMetrics();
@@ -58,7 +74,7 @@ export async function createTalosAgentRuntime(
       ...input,
       wallet: headless.wallet as any,
       account: headless.account,
-      feeMode: config.feeMode ?? "user_pays",
+      feeMode,
       coreAddress: config.coreAddress,
       coreAbi: config.coreAbi,
     });
@@ -81,7 +97,7 @@ export async function createTalosAgentRuntime(
       registerAgentViaStarkzap({
         wallet: headless.wallet as any,
         account: headless.account,
-        feeMode: config.feeMode ?? "user_pays",
+        feeMode,
         identityAddress: config.identityAddress,
         identityAbi: config.identityAbi,
         pubKey,

@@ -4,6 +4,9 @@ import { evaluateTalosReadiness } from "./readiness.js";
 
 test("evaluateTalosReadiness reports blocked stage with missing checks", () => {
   const report = evaluateTalosReadiness({
+    abiFreezeEnforced: true,
+    privacyPolicyEnforced: true,
+    gasSponsorshipReady: false,
     contractsTested: true,
     sdkTestsPassing: true,
     deploymentConfigured: false,
@@ -13,11 +16,18 @@ test("evaluateTalosReadiness reports blocked stage with missing checks", () => {
   });
 
   assert.equal(report.stage, "blocked");
-  assert.deepEqual(report.missing.sort(), ["deploymentConfigured", "indexerEnabled"]);
+  assert.deepEqual(report.missing.sort(), [
+    "deploymentConfigured",
+    "gasSponsorshipReady",
+    "indexerEnabled",
+  ]);
 });
 
 test("evaluateTalosReadiness reports mainnet_beta_ready when all checks pass", () => {
   const report = evaluateTalosReadiness({
+    abiFreezeEnforced: true,
+    privacyPolicyEnforced: true,
+    gasSponsorshipReady: true,
     contractsTested: true,
     sdkTestsPassing: true,
     deploymentConfigured: true,

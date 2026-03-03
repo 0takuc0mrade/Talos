@@ -7,6 +7,8 @@ This folder contains the first implementation batch for the Talos SDK offchain r
 - Privacy-first `task_commitment` helper.
 - Deployment address book loader for per-network module/token wiring.
 - Runtime guardrails (pause/rate-limit/deadline/amount caps).
+- ABI/interface freeze checker against a committed manifest.
+- Privacy policy enforcement for high-entropy `task_commitment` values.
 - Privacy-safe observability (redacting logger + in-memory metrics).
 - Basic event indexing helper for Talos contract events.
 - Starkzap-compatible invoke scaffolds for:
@@ -55,12 +57,19 @@ This folder contains the first implementation batch for the Talos SDK offchain r
 
 11. `src/guardrails/policy.ts`
    - Blocks execution when paused or policy thresholds are violated.
+   - Enforces commitment-shape policy for `taskCommitment`.
 
 12. `src/observability/logger.ts` + `src/observability/metrics.ts`
    - Redaction-safe logs and in-memory counters/timers.
 
 13. `src/indexer/eventIndexer.ts`
    - Polls Talos module events for dashboard/API indexing.
+
+14. `src/abi/interfaceFreeze.ts` + `src/scripts/checkAbiFreeze.ts`
+   - Enforces ABI freeze against `docs/talos-abi-freeze.json`.
+
+15. `src/launch/sponsorship.ts`
+   - Explicit gas sponsorship readiness checks for cartridge/signer runtime modes.
 
 ## How To Use
 
@@ -98,6 +107,12 @@ Or from repo root:
 
 ```bash
 npm --prefix ./offchain run check
+```
+
+4.1 Run ABI freeze check directly:
+
+```bash
+npm --prefix ./offchain run check:abi-freeze
 ```
 
 5. Run tests:

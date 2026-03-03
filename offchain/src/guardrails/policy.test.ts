@@ -7,7 +7,8 @@ const sampleInput = {
   payeeAddress: "0x222",
   tokenAddress: "0xaaa",
   amount: 100n,
-  taskCommitment: "0xabc",
+  taskCommitment:
+    "0x12ab34cd56ef7890ab12cd34ef56ab7890cd12ef34ab56cd78ef90ab12cd34",
   deadline: 1_800_000_000,
   signature: ["0x1", "0x2"],
   targetAgentId: 1n,
@@ -38,4 +39,16 @@ test("TalosExecutionGuardrails enforces rate limits", () => {
 
   nowMs += 2_000;
   guardrails.assertCanExecute(sampleInput);
+});
+
+test("TalosExecutionGuardrails rejects low-entropy task commitments", () => {
+  const guardrails = new TalosExecutionGuardrails();
+  assert.throws(
+    () =>
+      guardrails.assertCanExecute({
+        ...sampleInput,
+        taskCommitment: "0xabc",
+      }),
+    /high-entropy commitment/,
+  );
 });

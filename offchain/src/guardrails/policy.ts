@@ -1,5 +1,6 @@
 import type { WorkflowExecutionInput } from "../types.js";
 import { SlidingWindowRateLimiter, type RateLimitRule } from "./rateLimiter.js";
+import { assertTaskCommitment } from "../privacy/taskCommitmentPolicy.js";
 
 export interface TalosGuardrailsConfig {
   paused?: boolean | (() => boolean);
@@ -8,6 +9,7 @@ export interface TalosGuardrailsConfig {
   maxAmountByToken?: Record<string, bigint>;
   minDeadlineLeadSeconds?: number;
   maxDeadlineHorizonSeconds?: number;
+  taskCommitmentMinBits?: number;
   nowMs?: () => number;
 }
 
@@ -56,6 +58,10 @@ export class TalosExecutionGuardrails {
 
     ensurePositiveAmount(input.amount);
     ensureScoreRange(input.score);
+    assertTaskCommitment(input.taskCommitment, {
+      minBitLength: this.config.taskCommitmentMinBits,
+      fieldName: "workflow.taskCommitment",
+    });
 
     const nowMs = this.config.nowMs?.() ?? Date.now();
     const deadlineMs = input.deadline * 1000;

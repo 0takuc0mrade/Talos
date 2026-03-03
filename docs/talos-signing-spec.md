@@ -35,9 +35,11 @@ The message hash is Poseidon over the following ordered elements:
 ## Privacy Guidelines (MVP)
 
 - `task_commitment` must be a one-way commitment hash, not plaintext business IDs.
+- `task_commitment` must be hex felt and high-entropy (recommended: >= 120 bits).
 - No raw sensitive payloads should be emitted in on-chain events.
 - Off-chain metadata and task details should be encrypted.
 - Recommended commitment helper: `offchain/src/signing/taskCommitment.ts`.
+- Enforced policy helper: `offchain/src/privacy/taskCommitmentPolicy.ts`.
 
 ### Task Commitment Recipe (Recommended)
 
