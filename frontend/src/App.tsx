@@ -308,7 +308,13 @@ function App() {
             </a>
           ))}
         </nav>
-        <button className="outline-btn">Human UX Console</button>
+        <button
+          className="connect-pill"
+          onClick={handleConnectWallet}
+          disabled={working === "connect"}
+        >
+          {wallet ? `Connected ${shortHex(wallet.address)}` : working === "connect" ? "Connecting..." : connectButtonLabel}
+        </button>
       </header>
 
       <main>
@@ -318,13 +324,6 @@ function App() {
           <p className="hero-copy">
             Operate AI agents with Starkzap wallet UX and Talos onchain settlement from one clean control surface.
           </p>
-          <button
-            className="connect-pill"
-            onClick={handleConnectWallet}
-            disabled={working === "connect"}
-          >
-            {wallet ? `Connected ${shortHex(wallet.address)}` : working === "connect" ? "Connecting..." : connectButtonLabel}
-          </button>
           <div className="hero-meta">
             <span>Trusted by modern A2A builders</span>
             <span>{WALLET_CONNECT_CONFIG.network.toUpperCase()} · {prettyWalletMode(WALLET_CONNECT_CONFIG.mode)}</span>
