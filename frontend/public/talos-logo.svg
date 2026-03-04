@@ -1,0 +1,33 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="starknetNavy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E325A" />
+      <stop offset="100%" stop-color="#1C1E38" />
+    </linearGradient>
+  </defs>
+
+  <mask id="shield-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="500" height="500">
+    <rect width="500" height="500" fill="white" />
+    <path
+      d="M 250 310 L 280 310 L 280 340 C 280 365 250 380 250 380 C 250 380 220 365 220 340 L 220 310 Z"
+      fill="black"
+    />
+  </mask>
+
+  <g mask="url(#shield-mask)">
+    <path
+      d="M 250 50 L 400 200 L 325 200 L 250 125 L 175 200 L 100 200 Z"
+      fill="url(#starknetNavy)"
+    />
+
+    <path
+      d="M 250 165 L 400 315 L 325 315 L 250 240 L 175 315 L 100 315 Z"
+      fill="url(#starknetNavy)"
+    />
+
+    <path
+      d="M 100 315 L 400 315 L 250 465 Z"
+      fill="url(#starknetNavy)"
+    />
+  </g>
+</svg>

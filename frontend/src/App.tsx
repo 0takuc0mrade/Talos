@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   approveToken,
   checkTokenSupported,
@@ -78,7 +78,16 @@ const WALLET_CONNECT_CONFIG: HumanWalletConnectConfig = {
   autoEnsureReady: String(env.VITE_STARKZAP_AUTO_ENSURE_READY ?? "false").toLowerCase() === "true"
 };
 
-const NAV_ITEMS = ["Dashboard", "Agents", "Funding", "Activity", "FAQ"];
+const MAIN_NAV_ITEMS = [
+  { label: "Build", href: "#build" },
+  { label: "Secure", href: "#secure" },
+  { label: "Operate", href: "#operate" }
+] as const;
+
+const UTILITY_NAV_ITEMS = [
+  { label: "Forum", href: "#" },
+  { label: "Docs", href: "#" }
+] as const;
 
 const FEATURE_CARDS = [
   {
@@ -100,6 +109,44 @@ const FEATURE_CARDS = [
     title: "Onchain Traceability",
     body: "Inspect recent protocol activity directly from Identity, Settlement, Reputation, and Core.",
     tag: "Ops Visibility"
+  }
+];
+
+const SECURITY_CARDS = [
+  {
+    title: "Signature Verification",
+    body: "Settlement payloads are checked against account signatures before any transfer is executed."
+  },
+  {
+    title: "Replay Protection",
+    body: "Task commitments act as unique nullifiers, preventing duplicate settlement execution."
+  },
+  {
+    title: "Token Whitelist Controls",
+    body: "Only approved settlement tokens are accepted by protocol policy and module whitelist checks."
+  },
+  {
+    title: "Auditable Reputation Trail",
+    body: "Post-payment feedback is immutably recorded, creating transparent trust history per agent."
+  }
+];
+
+const FAQ_ITEMS = [
+  {
+    title: "How do I register an agent?",
+    body: "Connect a wallet, provide a felt252 public key and metadata URI, then submit Register Agent."
+  },
+  {
+    title: "How does funding work?",
+    body: "Quick Funding approves the settlement contract so it can route supported token payments."
+  },
+  {
+    title: "Are private keys required in frontend env?",
+    body: "No. Frontend uses Starkzap-compatible wallet sessions and signer injection paths."
+  },
+  {
+    title: "Can I use injected wallets?",
+    body: "Yes. Set VITE_WALLET_MODE=injected to use ArgentX/Braavos style injected providers."
   }
 ];
 
@@ -140,6 +187,14 @@ function prettyWalletMode(mode: WalletMode): string {
   return "Injected";
 }
 
+function walletExplorerUrl(address: string, network: "sepolia" | "mainnet"): string {
+  const normalized = normalizeHex(address);
+  if (network === "mainnet") {
+    return `https://starkscan.co/contract/${normalized}`;
+  }
+  return `https://sepolia.starkscan.co/contract/${normalized}`;
+}
+
 function App() {
   const envIssues = useMemo(getEnvIssues, []);
   const provider = useMemo(() => (env.VITE_RPC_URL ? makeProvider(env.VITE_RPC_URL) : null), []);
@@ -166,6 +221,8 @@ function App() {
   const [uiError, setUiError] = useState<string>("");
   const [uiInfo, setUiInfo] = useState<string>("");
   const [lastTx, setLastTx] = useState<UiTx | null>(null);
+  const [walletMenuOpen, setWalletMenuOpen] = useState<boolean>(false);
+  const walletMenuRef = useRef<HTMLDivElement | null>(null);
 
   async function refreshReadState() {
     if (!provider) {
@@ -204,6 +261,32 @@ function App() {
     void refreshReadState();
   }, []);
 
+  useEffect(() => {
+    if (!walletMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (walletMenuRef.current && !walletMenuRef.current.contains(event.target as Node)) {
+        setWalletMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setWalletMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [walletMenuOpen]);
+
   async function handleConnectWallet() {
     setWorking("connect");
     setUiError("");
@@ -211,6 +294,7 @@ function App() {
     try {
       const session = await connectHumanWallet(WALLET_CONNECT_CONFIG);
       setWallet(session);
+      setWalletMenuOpen(false);
       if (!registerPubKey) {
         setRegisterPubKey(session.address);
       }
@@ -288,37 +372,167 @@ function App() {
     }
   }
 
-  const connectButtonLabel =
-    WALLET_CONNECT_CONFIG.mode === "injected"
-      ? "Connect Injected Wallet"
-      : WALLET_CONNECT_CONFIG.mode === "starkzap_cartridge"
-        ? "Connect Starkzap Cartridge"
-        : "Connect Starkzap";
+  const connectButtonLabel = "Connect";
+
+  function handleConnectButtonClick() {
+    if (wallet) {
+      setWalletMenuOpen((current) => !current);
+      return;
+    }
+    void handleConnectWallet();
+  }
+
+  async function handleCopyAddress() {
+    if (!wallet) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(wallet.address);
+      setUiError("");
+      setUiInfo("Address copied to clipboard.");
+      setWalletMenuOpen(false);
+    } catch (error) {
+      setUiError(error instanceof Error ? error.message : "Failed to copy wallet address.");
+    }
+  }
+
+  function handleDisconnectWallet() {
+    setWallet(null);
+    setWalletMenuOpen(false);
+    setUiError("");
+    setUiInfo("Wallet disconnected.");
+  }
 
   return (
     <div className="page">
       <div className="ambient-overlay" />
       <div className="grid-overlay" />
-      <header className="site-header">
-        <div className="logo">Talos</div>
-        <nav>
-          {NAV_ITEMS.map((item) => (
-            <a key={item} href="#" onClick={(event) => event.preventDefault()}>
-              {item}
-            </a>
-          ))}
-        </nav>
-        <button
-          className="connect-pill"
-          onClick={handleConnectWallet}
-          disabled={working === "connect"}
-        >
-          {wallet ? `Connected ${shortHex(wallet.address)}` : working === "connect" ? "Connecting..." : connectButtonLabel}
-        </button>
+      <header>
+        <div className="topbar">
+          <div className="brand">
+            <img className="logo-mark" src="/talos-logo.svg" alt="Talos logo" />
+            <span className="logo">Talos</span>
+          </div>
+
+          <nav className="nav-main" aria-label="Primary">
+            {MAIN_NAV_ITEMS.map((item) => (
+              <a key={item.label} href={item.href}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="nav-utility">
+            {UTILITY_NAV_ITEMS.map((item) => (
+              <a key={item.label} href={item.href} onClick={(event) => event.preventDefault()}>
+                {item.label}
+              </a>
+            ))}
+            <div className="wallet-menu-wrap" ref={walletMenuRef}>
+              <button
+                className="connect-pill"
+                onClick={handleConnectButtonClick}
+                disabled={working === "connect"}
+                aria-expanded={wallet ? walletMenuOpen : false}
+                aria-haspopup={wallet ? "menu" : undefined}
+              >
+                {wallet ? (
+                  shortHex(wallet.address)
+                ) : working === "connect" ? (
+                  "Connecting..."
+                ) : (
+                  <span className="connect-pill-content">
+                    <svg
+                      className="connect-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M3 7.5C3 6.67157 3.67157 6 4.5 6H19.5C20.3284 6 21 6.67157 21 7.5V16.5C21 17.3284 20.3284 18 19.5 18H4.5C3.67157 18 3 17.3284 3 16.5V7.5Z"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M16 12C16 11.1716 16.6716 10.5 17.5 10.5H21V13.5H17.5C16.6716 13.5 16 12.8284 16 12Z"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <circle cx="17.5" cy="12" r="0.75" fill="currentColor" />
+                    </svg>
+                    <span>{connectButtonLabel}</span>
+                  </span>
+                )}
+              </button>
+
+              {wallet && walletMenuOpen ? (
+                <div className="wallet-menu" role="menu" aria-label="Connected wallet menu">
+                  <div className="wallet-menu-header">
+                    <p className="wallet-menu-label">Connected Wallet</p>
+                    <p className="wallet-menu-address">{wallet.address}</p>
+                  </div>
+
+                  <button className="wallet-menu-action" type="button" onClick={() => void handleCopyAddress()}>
+                    <svg className="wallet-menu-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M9 9.75C9 8.50736 10.0074 7.5 11.25 7.5H18C19.2426 7.5 20.25 8.50736 20.25 9.75V16.5C20.25 17.7426 19.2426 18.75 18 18.75H11.25C10.0074 18.75 9 17.7426 9 16.5V9.75Z"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M15 7.5V6.75C15 5.50736 13.9926 4.5 12.75 4.5H6C4.75736 4.5 3.75 5.50736 3.75 6.75V13.5C3.75 14.7426 4.75736 15.75 6 15.75H9"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                    <span>Copy Address</span>
+                  </button>
+
+                  <a
+                    className="wallet-menu-action"
+                    href={walletExplorerUrl(wallet.address, WALLET_CONNECT_CONFIG.network)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setWalletMenuOpen(false)}
+                  >
+                    <svg className="wallet-menu-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M14.25 5.25H18.75V9.75" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M10.5 13.5L18.75 5.25" stroke="currentColor" strokeWidth="1.5" />
+                      <path
+                        d="M18 13.5V18C18 18.8284 17.3284 19.5 16.5 19.5H6C5.17157 19.5 4.5 18.8284 4.5 18V7.5C4.5 6.67157 5.17157 6 6 6H10.5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                    <span>View on Explorer</span>
+                  </a>
+
+                  <button className="wallet-menu-action danger" type="button" onClick={handleDisconnectWallet}>
+                    <svg className="wallet-menu-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M10.5 4.5H7.5C6.67157 4.5 6 5.17157 6 6V18C6 18.8284 6.67157 19.5 7.5 19.5H10.5" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M14.25 15.75L18 12L14.25 8.25" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M18 12H9" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                    <span>Disconnect</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="subbar">
+          <p>Talos Open Stack</p>
+          <div className="subbar-meta">
+            <span>{WALLET_CONNECT_CONFIG.network.toUpperCase()}</span>
+            <span>{prettyWalletMode(WALLET_CONNECT_CONFIG.mode)}</span>
+          </div>
+        </div>
       </header>
 
       <main>
-        <section className="hero section">
+        <section className="hero stack-section">
           <p className="hero-kicker">Talos Protocol</p>
           <h1 className="hero-title-metal">Gain Full Command of Your Agent Economy</h1>
           <p className="hero-copy">
@@ -344,14 +558,15 @@ function App() {
         {uiError ? <section className="banner error">{uiError}</section> : null}
         {uiInfo ? <section className="banner info">{uiInfo}</section> : null}
 
-        <section className="section">
-          <div className="section-head">
-            <h2>Why Talos Stands Out</h2>
-            <p>Built for fast, safe, and composable agent-to-agent commerce on Starknet.</p>
+        <section id="build" className="stack-section">
+          <div className="stack-section-head">
+            <p className="stack-kicker">Build</p>
+            <h2>Build Agent Infrastructure Faster</h2>
+            <p>Protocol-grade modules for identity, settlement, and observability in one integrated stack.</p>
           </div>
-          <div className="feature-grid">
+          <div className="oz-grid-2">
             {FEATURE_CARDS.map((feature) => (
-              <article key={feature.title} className="feature-card">
+              <article key={feature.title} className="oz-card feature-card">
                 <p className="feature-tag">{feature.tag}</p>
                 <h3>{feature.title}</h3>
                 <p>{feature.body}</p>
@@ -360,7 +575,42 @@ function App() {
           </div>
         </section>
 
-        <section className="section console-section">
+        <section id="secure" className="stack-section">
+          <div className="stack-section-head">
+            <p className="stack-kicker">Secure</p>
+            <h2>Security and Trust Are Protocol Defaults</h2>
+            <p>Talos combines cryptographic authorization, replay safety, and transparent event trails.</p>
+          </div>
+
+          <div className="oz-grid-2">
+            {SECURITY_CARDS.map((card) => (
+              <article key={card.title} className="oz-card secure-card">
+                <h3>{card.title}</h3>
+                <p>{card.body}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="secure-faq">
+            <h3>Frequently Asked Questions</h3>
+            <div className="faq-grid">
+              {FAQ_ITEMS.map((item) => (
+                <article key={item.title} className="faq-item">
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="operate" className="stack-section operate-section">
+          <div className="stack-section-head">
+            <p className="stack-kicker">Operate</p>
+            <h2>Run the Talos Workflow Console</h2>
+            <p>Connect wallet, register agents, approve settlement routes, and inspect live onchain activity.</p>
+          </div>
+
           <div className="console-shell">
             <div className="console-main">
               <div className="hud-strip">
@@ -491,31 +741,23 @@ function App() {
           </div>
         </section>
 
-        <section className="section faq-section">
-          <div className="section-head">
-            <h2>Frequently Asked Questions</h2>
-            <p>Quick operational answers for Talos human operators.</p>
-          </div>
-          <div className="faq-grid">
-            <div className="faq-item"><strong>How do I register?</strong><span>Connect wallet, input pub key + metadata URI, submit.</span></div>
-            <div className="faq-item"><strong>How do I fund?</strong><span>Use approve to grant settlement allowance in selected token.</span></div>
-            <div className="faq-item"><strong>Do I need private keys in env?</strong><span>No. Starkzap signer injection is supported in-browser.</span></div>
-            <div className="faq-item"><strong>Can I use injected wallet?</strong><span>Yes, set <code>VITE_WALLET_MODE=injected</code>.</span></div>
+        <section className="stack-section cta-band">
+          <div className="cta-inner">
+            <h2>Join the Talos Operator Community</h2>
+            <p>Build, secure, and operate agent economies with Starknet-native payment rails.</p>
+            <a href="#" onClick={(event) => event.preventDefault()} className="outline-btn cta-link">
+              View Docs
+            </a>
           </div>
         </section>
       </main>
 
       <footer className="site-footer">
         <div>
-          <p className="logo">Talos</p>
-        </div>
-        <div>
-          <ul>
-            <li>Identity</li>
-            <li>Settlement</li>
-            <li>Reputation</li>
-            <li>Core Router</li>
-          </ul>
+          <div className="brand footer-brand">
+            <img className="logo-mark" src="/talos-logo.svg" alt="Talos logo" />
+            <span className="logo">Talos</span>
+          </div>
         </div>
       </footer>
     </div>
